@@ -1,25 +1,10 @@
-chrome.webNavigation.onCompleted.addListener(function(details) {
+chrome.webNavigation.onCompleted.addListener(async (details) => {
     const url = new URL(details.url);
-    const targetUrlOrigin = "https://kau.gov.hu"; // Replace with your target URL
-    const pathName = "/proxy/saml/authservice";
-    const targetCookieName = "IDS_SSO_ID"; // Replace with the cookie name you want to delete
-
-    console.log(`url.origin: ${url.origin}`);
-    console.log(`url.pathname: ${url.pathname}`);
-    console.log(`url.search: ${url.search}`);
-
-    if (url.origin === targetUrlOrigin && url.pathname == pathName) {
-	chrome.cookies.remove({
-	    url: targetUrlOrigin,
-	    name: targetCookieName
-	}, function(deletedCookie) {
-	    if (deletedCookie) {
-		console.log(`Deleted cookie: ${targetCookieName}`);
-	    } else {
-		console.log(`No cookie found with name: ${targetCookieName}`);
-	    }
-	});
+    if (url.hostname === "kau.gov.hu" && url.pathname === "/proxy/saml/authservice") {
+	const cookies = await chrome.cookies.getAll({ domain: "kau.gov.hu" });
+	for (const cookie of cookies) {
+	    console.log(`Deleting cookie: ${cookie.name} (url: https://${cookie.domain}${cookie.path})`);
+	    await chrome.cookies.remove({ url: `https://${cookie.domain}${cookie.path}`, name: cookie.name });
+	}
     }
-}, {
-    url: [{urlMatches: "https://kau.gov.hu/proxy/saml/authservice*"}] // Replace with your target URL pattern
-});
+}, { url: [{ urlMatches: 'https://kau.gov.hu/proxy/saml/authservice' }] });
